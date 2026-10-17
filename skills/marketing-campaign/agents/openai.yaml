@@ -1,4 +1,4 @@
 interface:
   display_name: "marketing-campaign"
-  short_description: "从 brief 到品牌 Word 方案的并行多角色工作流"
-  default_prompt: "使用 $marketing-campaign 把我给出的营销 brief 做成可交付的 Word 活动方案。"
+  short_description: "Parallel multi-role workflow from brief to brand-ready Word plan"
+  default_prompt: "Use $marketing-campaign to turn my marketing brief into a deliverable Word campaign plan."

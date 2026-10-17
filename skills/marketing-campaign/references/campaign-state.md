@@ -1,8 +1,8 @@
-# campaign_state：共享状态、协作消息与评审清单
+# campaign_state: Shared State, Collaboration Messages, and Review Checklist
 
-所有角色通过工作目录下的 `campaign_state.json` 交换信息。任何角色不得绕过该文件直接调用另一个角色。
+All roles exchange information through `campaign_state.json` in the working directory. No role may bypass this file to call another role directly.
 
-## 1. 状态 Schema
+## 1. State Schema
 
 ```json
 {
@@ -18,81 +18,81 @@
 }
 ```
 
-| 字段 | 规则 |
+| Field | Rules |
 |---|---|
-| `status` | 状态机唯一真源；只有主 Agent（Manager）允许改写 |
-| `brief` | 用户原始需求，Phase 0 定稿后不再改动 |
-| `research_summary` / `copy_package` / `visual_package` | 三角色交付物路径或内容摘要；子 Agent 只写自己那栏 |
-| `open_questions` | 待路由的依赖问题；Manager 路由后清空该条并写入 `messages[]` |
-| `revision_round` / `max_revision_rounds` | 修订计数与硬上限 3；Manager 独占修改 |
-| `messages` | 协作消息流水，只增不改 |
+| `status` | The single source of truth for the state machine; only the main Agent (Manager) may change it |
+| `brief` | The user's original requirement; frozen once Phase 0 finalizes it |
+| `research_summary` / `copy_package` / `visual_package` | Paths or content summaries of the three deliverables; each sub-agent writes only its own field |
+| `open_questions` | Pending dependency questions; after the Manager routes one, clear it and write it into `messages[]` |
+| `revision_round` / `max_revision_rounds` | Revision counter and hard cap of 3; the Manager owns both |
+| `messages` | Append-only collaboration message log |
 
-## 2. 状态机
+## 2. State Machine
 
 ```
 researching ──┬──> writing ──┐
               ├──> designing ─┤
-              │               ├──> reviewing ──通过──> finalizing
+              │               ├──> reviewing ──pass──> finalizing
               └───────────────┘        │
-                                       └──不通过──> revising ──> reviewing（revision_round + 1）
+                                       └──fail──> revising ──> reviewing (revision_round + 1)
 ```
 
-- `revising` 只退回问题最小的子任务，未退回角色的成果保留。
-- `revision_round` 达到 `max_revision_rounds` 后禁止再进入 `revising`，必须带缺陷进入 `finalizing` 并在交付说明中标注。
+- `revising` bounces back only the smallest failing subtask; work from roles that isn't bounced back is kept.
+- Once `revision_round` reaches `max_revision_rounds`, entering `revising` again is forbidden — go to `finalizing` with defects flagged instead.
 
-## 3. 协作消息（collab_request）
+## 3. Collaboration Messages (collab_request)
 
 ```json
 {
   "from": "writer",
   "to": "image_designer",
   "type": "request",
-  "content": "请基于'高性价比家用投影仪'定位提供3种视觉方向。",
+  "content": "Please provide 3 visual directions based on the 'high-value home projector' positioning.",
   "status": "pending"
 }
 ```
 
-- `type`：request / response / decision。
-- `status`：pending → routed → resolved；由 Manager 推进。
-- 每次路由都写日志（时间、from、to、决策理由），便于审计和重试。
+- `type`: request / response / decision.
+- `status`: pending → routed → resolved; advanced by the Manager.
+- Every routing decision is logged (timestamp, from, to, rationale) for audit and retry.
 
-## 4. 三角色交付物最低要求
+## 4. Minimum Requirements for the Three Deliverables
 
 **Researcher → `research_summary.md`**
-- 行业趋势、竞品动作、用户洞察、渠道数据四节；
-- 每条结论标注来源（URL/工具/知识库）或显式写"假设"；
-- 输出 `open_questions`：需要其他角色或用户确认的问题。
+- Four sections: market trends, competitor moves, audience insights, channel data;
+- Every conclusion carries a source (URL / tool / knowledge base) or is explicitly tagged "assumption";
+- Output `open_questions`: questions needing other roles or the user to confirm.
 
 **Writer → `copy_package.md`**
-- 定位声明、核心卖点（≤5）、主文案、渠道文案变体、内容日历、CTA；
-- 遵循品牌规范（语气、禁用词、口吻）；
-- 标注哪些卖点依赖 Researcher 结论。
+- Positioning statement, core selling points (≤5), main copy, channel variants, content calendar, CTA;
+- Follows brand guidelines (tone, forbidden words, voice);
+- Flags which selling points depend on the Researcher's conclusions.
 
 **Image Designer → `visual_package.md`**
-- ≥3 个视觉方向，每个含：方向名、风格描述、适用渠道、图片提示词（中英文各一）；
-- 素材清单（需要用户提供的 Logo/产品图/实拍）；
-- 禁止在此阶段调用生图工具。
+- ≥3 visual directions, each with: direction name, style description, applicable channels, image prompts (one in English, one in Chinese);
+- Asset list (Logo / product shots / real-life photos needed from the user);
+- Calling image-generation tools at this stage is forbidden.
 
-## 5. 评审清单（Manager 逐项打勾）
+## 5. Review Checklist (Manager ticks every item)
 
-研究线：
-- [ ] 结论有来源或"假设"标注
-- [ ] 竞品覆盖 ≥3 家
-- [ ] 与 brief 的活动目标直接相关
+Research line:
+- [ ] Every conclusion has a source or "assumption" tag
+- [ ] Competitors covered: ≥3
+- [ ] Directly relevant to the campaign goal in the brief
 
-文案线：
-- [ ] 定位一句话能说清
-- [ ] 卖点有研究结论或明确假设支撑
-- [ ] CTA 具体可执行
-- [ ] 语气符合品牌规范
+Copy line:
+- [ ] The positioning can be stated in one sentence
+- [ ] Selling points are backed by research conclusions or explicit assumptions
+- [ ] The CTA is concrete and actionable
+- [ ] The tone matches brand guidelines
 
-视觉线：
-- [ ] 方向 ≥3 且互不重复
-- [ ] 提示词可执行（主体、风格、构图、比例齐全）
-- [ ] 视觉方向与文案定位一致
+Visual line:
+- [ ] ≥3 directions, none duplicated
+- [ ] Prompts are executable (subject, style, composition, aspect ratio all present)
+- [ ] Visual directions match the copy positioning
 
-整体：
-- [ ] 预算、时间线、KPI 三者自洽
-- [ ] 无未路由的 collab_request
+Overall:
+- [ ] Budget, timeline, and KPIs are mutually consistent
+- [ ] No un-routed collab_request remains
 
-任一项不过 → 退回对应角色，重试前先更新 `campaign_state.json`。
+Any failed item → bounce back to the right role; update `campaign_state.json` before retrying.
