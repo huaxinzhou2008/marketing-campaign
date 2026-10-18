@@ -1,5 +1,5 @@
 ---
-name: marketing-campaign
+name: marketing-campaign-en
 description: End-to-end marketing campaign planning. From a brief, it runs a multi-agent workflow that advances research, copy, and visuals in parallel, routes cross-role dependencies through shared state, passes the marketing manager review loop (bounced back until it passes, max 3 revision rounds), emits a schema-validated structured JSON, and renders a brand-styled Word document. Use when the user asks for a marketing campaign plan, a product launch plan, or a promotion plan. Does not handle single-paragraph copy rewrites or pure typesetting beautification.
 ---
 

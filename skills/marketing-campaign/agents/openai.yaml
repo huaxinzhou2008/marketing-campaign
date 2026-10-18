@@ -1,4 +1,0 @@
-interface:
-  display_name: "marketing-campaign"
-  short_description: "Parallel multi-role workflow from brief to brand-ready Word plan"
-  default_prompt: "Use $marketing-campaign to turn my marketing brief into a deliverable Word campaign plan."
